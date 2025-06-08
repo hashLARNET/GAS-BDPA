@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BDPA - Base de Datos de Progreso Automatizado</title>
+    
+    <!-- Cargar estilos -->
+    <?!= HtmlService.createHtmlOutputFromFile('css/main').getContent(); ?>
+    <?!= HtmlService.createHtmlOutputFromFile('css/modal').getContent(); ?>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script>
+      // Función para comunicarse con el servidor Google Apps Script
+      function callAPI(action, data = {}) {
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            .callAPI(action, data, localStorage.getItem('bdpa_token'));
+        });
+      }
+    </script>
+</head>
+<body>
+    <!-- Contenedor de Login -->
+    <div id="login-container" class="container">
+        <div class="logo-container">
+            <img src="https://via.placeholder.com/60x60?text=BDPA" alt="Logo BDPA" class="logo">
+            <div>
+                <div class="logo-text">BDPA</div>
+                <div class="logo-subtext">Base de Datos de Progreso Automatizado</div>
+            </div>
+        </div>
+        <h2 class="text-center">Iniciar Sesión</h2>
+        <div class="form-group">
+            <label for="username"><i class="fas fa-user"></i> Usuario:</label>
+            <input type="text" id="username" placeholder="Ingrese su usuario">
+        </div>
+        <div class="form-group">
+            <label for="password"><i class="fas fa-lock"></i> Contraseña:</label>
+            <input type="password" id="password" placeholder="Ingrese su contraseña">
+        </div>
+        <button class="btn btn-primary btn-block" onclick="iniciarSesion()">
+            <i class="fas fa-sign-in-alt"></i> Ingresar
+        </button>
+        <div id="login-loader" class="loader hidden"></div>
+        <div id="login-error" class="mt-20 text-danger hidden"></div>
+        <div class="footer">
+            <p>BDPA v2.0 - Desarrollado por Larnet Telecomunicaciones &copy; 2023-2024</p>
+        </div>
+    </div>
+<!-- Menú Principal -->
+    <div id="main-menu-container" class="container hidden fade-in">
+        <div class="header">
+            <div class="logo-container">
+                <img src="https://via.placeholder.com/60x60?text=BDPA" alt="Logo BDPA" class="logo">
+                <div>
+                    <div class="logo-text">BDPA</div>
+                    <div class="logo-subtext">Base de Datos de Progreso Automatizado</div>
+                </div>
+            </div>
+            <div class="user-info">
+                <div class="user-name" id="current-user"></div>
+                <div class="user-role" id="current-role"></div>
+                <a class="logout-btn" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+                <a class="logout-btn mt-10" onclick="mostrarModalContrasena()"><i class="fas fa-key"></i> Cambiar contraseña</a>
+            </div>
+        </div>
+
+        <div id="main-menu">
+            <div class="menu-card" onclick="mostrarSeccion('registrar-avance')" id="registrar-avance-btn">
+                <i class="fas fa-tasks"></i>
+                <h3>Registrar Avance</h3>
+                <p>Registra nuevos avances en las obras</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('consultar-avances')">
+                <i class="fas fa-search"></i>
+                <h3>Consultar Avances</h3>
+                <p>Consulta el progreso de las obras</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('gestion-obras')" id="gestion-obras-btn">
+                <i class="fas fa-building"></i>
+                <h3>Gestión de Obras</h3>
+                <p>Administra las obras disponibles</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('gestion-inventario')" id="gestion-inventario-btn">
+                <i class="fas fa-boxes"></i>
+                <h3>Gestión de Inventario</h3>
+                <p>Administra materiales y stock</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('gestion-usuarios')" id="gestion-usuarios-btn">
+                <i class="fas fa-users"></i>
+                <h3>Gestión de Usuarios</h3>
+                <p>Administra los usuarios del sistema</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('reportes')">
+                <i class="fas fa-chart-bar"></i>
+                <h3>Reportes</h3>
+                <p>Genera reportes de progreso</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('configuracion')" id="configuracion-btn">
+                <i class="fas fa-cog"></i>
+                <h3>Configuración</h3>
+                <p>Configura el sistema</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('gestion-avances')" id="gestion-avances-btn">
+                <i class="fas fa-list-check"></i>
+                <h3>Tipos de Avance</h3>
+                <p>Administra los tipos de avance</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('documentacion')">
+                <i class="fas fa-file-alt"></i>
+                <h3>Documentación</h3>
+                <p>Gestiona y consulta documentos</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('planificacion-metas')" id="planificacion-metas-btn">
+                <i class="fas fa-bullseye"></i>
+                <h3>Planificación</h3>
+                <p>Gestiona metas y objetivos</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('cobranzas')" id="cobranzas-btn">
+                <i class="fas fa-money-bill-wave"></i>
+                <h3>Cobranzas</h3>
+                <p>Gestiona avances para facturación</p>
+            </div>
+            
+            <div class="menu-card" onclick="mostrarSeccion('transferencias')" id="transferencias-btn">
+                <i class="fas fa-exchange-alt"></i>
+                <h3>Transferencias</h3>
+                <p>Gestiona traslados de material</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>BDPA v2.0 - Desarrollado por Larnet Telecomunicaciones &copy; 2023-2024</p>
+        </div>
+    </div>
+<!-- Sección de Registrar Avance (actualizada con carga de fotos) -->
+<div id="modal-registrar-avance" class="modal-overlay hidden">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-plus-circle"></i>
+                <span id="titulo-modal-avance">Registrar Nuevo Avance</span>
+            </h3>
+            <button class="modal-close" onclick="cerrarModalRegistrarAvance()">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <form id="form-avance">
+                <!-- Información básica del avance -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="obra-avance">Obra *</label>
+                        <select id="obra-avance" required>
+                            <option value="">Seleccionar obra...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tipo-avance">Tipo de Avance *</label>
+                        <select id="tipo-avance" required>
+                            <option value="">Seleccionar tipo...</option>
+                            <option value="Departamento">Departamento</option>
+                            <option value="Espacio Común">Espacio Común</option>
+                            <option value="Infraestructura">Infraestructura</option>
+                            <option value="Red Principal">Red Principal</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Ubicación específica -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="torre-avance">Torre</label>
+                        <select id="torre-avance">
+                            <option value="">Seleccionar torre...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="piso-avance">Piso</label>
+                        <select id="piso-avance">
+                            <option value="">Seleccionar piso...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="departamento-avance">Departamento</label>
+                        <select id="departamento-avance">
+                            <option value="">Seleccionar departamento...</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Categoría y detalles -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="categoria-avance">Categoría *</label>
+                        <select id="categoria-avance" required>
+                            <option value="">Seleccionar categoría...</option>
+                            <option value="Alámbrico">Alámbrico</option>
+                            <option value="Inalámbrico">Inalámbrico</option>
+                            <option value="Fibra Óptica">Fibra Óptica</option>
+                            <option value="Señales">Señales</option>
+                            <option value="Mediciones">Mediciones</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="subcategoria-avance">Subcategoría</label>
+                        <input type="text" id="subcategoria-avance" placeholder="Ej: Instalación de PAU">
+                    </div>
+                </div>
+                
+                <!-- Estado y progreso -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="estado-avance">Estado</label>
+                        <select id="estado-avance">
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En progreso" selected>En progreso</option>
+                            <option value="Completado">Completado</option>
+                            <option value="Pausado">Pausado</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="porcentaje-avance">Porcentaje Completado</label>
+                        <div class="percentage-input">
+                            <input type="number" id="porcentaje-avance" min="0" max="100" value="0">
+                            <span class="percentage-symbol">%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Fechas -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fecha-inicio-avance">Fecha Inicio</label>
+                        <input type="datetime-local" id="fecha-inicio-avance">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fecha-fin-avance">Fecha Fin Estimada</label>
+                        <input type="datetime-local" id="fecha-fin-avance">
+                    </div>
+                </div>
+                
+                <!-- Descripción -->
+                <div class="form-group">
+                    <label for="descripcion-avance">Descripción del Avance *</label>
+                    <textarea id="descripcion-avance" rows="3" placeholder="Describe detalladamente el trabajo realizado..." required></textarea>
+                </div>
+                
+                <!-- Observaciones -->
+                <div class="form-group">
+                    <label for="observaciones-avance">Observaciones</label>
+                    <textarea id="observaciones-avance" rows="2" placeholder="Observaciones adicionales, problemas encontrados, etc."></textarea>
+                </div>
+                
+                <!-- SECCIÓN DE FOTOS MODIFICADA CON CÁMARA -->
+                <div class="form-group">
+                    <label>Fotos del Avance:</label>
+                    
+                    <!-- Contenedor principal de la cámara -->
+                    <div id="camera-container" class="camera-container">
+                        
+                        <!-- Estado inicial - Botón para abrir cámara -->
+                        <div id="camera-initial" class="camera-state">
+                            <div class="camera-icon">
+                                <i class="fas fa-camera" style="font-size: 48px; color: #6c757d; margin-bottom: 15px;"></i>
+                            </div>
+                            <p class="text-muted mb-15">Toma fotos del avance realizado</p>
+                            <div class="camera-buttons">
+                                <button type="button" class="btn btn-primary" onclick="iniciarCamara()">
+                                    <i class="fas fa-camera"></i> Abrir Cámara
+                                </button>
+                                <button type="button" class="btn btn-secondary ml-10" onclick="seleccionarArchivo()">
+                                    <i class="fas fa-upload"></i> Subir Archivo
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Vista de la cámara activa -->
+                        <div id="camera-active" class="camera-state hidden">
+                            <div class="camera-preview">
+                                <video id="camera-video" autoplay playsinline muted></video>
+                                <div class="camera-overlay">
+                                    <div class="camera-grid">
+                                        <div class="grid-line grid-vertical-1"></div>
+                                        <div class="grid-line grid-vertical-2"></div>
+                                        <div class="grid-line grid-horizontal-1"></div>
+                                        <div class="grid-line grid-horizontal-2"></div>
+                                    </div>
+                                    <div class="camera-info">
+                                        <span id="camera-status">Cámara lista</span>
+                                    </div>
+                                </div>
+                                <canvas id="camera-canvas" style="display: none;"></canvas>
+                            </div>
+                            <div class="camera-controls mt-15">
+                                <button type="button" class="btn btn-success btn-capture" onclick="capturarFoto()">
+                                    <i class="fas fa-camera"></i>
+                                    <span class="capture-text">Capturar Foto</span>
+                                </button>
+                                <button type="button" class="btn btn-secondary ml-10" onclick="cambiarCamara()" id="btn-cambiar-camara">
+                                    <i class="fas fa-sync-alt"></i> Cambiar Cámara
+                                </button>
+                                <button type="button" class="btn btn-danger ml-10" onclick="detenerCamara()">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Vista de foto capturada -->
+                        <div id="camera-captured" class="camera-state hidden">
+                            <div class="photo-preview">
+                                <img id="captured-photo" src="" alt="Foto capturada" class="captured-image">
+                                <div class="photo-overlay">
+                                    <div class="photo-info">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Foto capturada exitosamente</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="photo-controls mt-15">
+                                <button type="button" class="btn btn-primary" onclick="guardarFotoCapturada()">
+                                    <i class="fas fa-check"></i> Usar Esta Foto
+                                </button>
+                                <button type="button" class="btn btn-warning ml-10" onclick="tomarOtraFoto()">
+                                    <i class="fas fa-redo"></i> Tomar Otra
+                                </button>
+                                <button type="button" class="btn btn-secondary ml-10" onclick="cancelarCaptura()">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Lista de fotos guardadas -->
+                        <div id="fotos-guardadas" class="fotos-list mt-20 hidden">
+                            <h4 class="fotos-title">
+                                <i class="fas fa-images"></i> 
+                                Fotos del Avance (<span id="contador-fotos">0</span>)
+                            </h4>
+                            <div id="lista-fotos" class="fotos-grid">
+                                <!-- Las fotos se cargarán dinámicamente aquí -->
+                            </div>
+                        </div>
+                        
+                        <!-- Loading spinner -->
+                        <div id="camera-loading" class="camera-loading hidden">
+                            <div class="spinner">
+                                <div class="spinner-border" role="status">
+                                    <span class="sr-only">Cargando...</span>
+                                </div>
+                            </div>
+                            <p class="loading-text">Iniciando cámara...</p>
+                        </div>
+                        
+                        <!-- Error state -->
+                        <div id="camera-error" class="camera-error hidden">
+                            <div class="error-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <h4>Error al acceder a la cámara</h4>
+                            <p id="error-message">No se pudo acceder a la cámara del dispositivo.</p>
+                            <div class="error-actions">
+                                <button type="button" class="btn btn-primary" onclick="reintentarCamara()">
+                                    <i class="fas fa-redo"></i> Reintentar
+                                </button>
+                                <button type="button" class="btn btn-secondary ml-10" onclick="seleccionarArchivo()">
+                                    <i class="fas fa-upload"></i> Subir Archivo
+                                </button>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <!-- Input oculto para compatibilidad con archivo -->
+                    <input type="file" id="file-input-fotos" accept="image/*" capture="camera" style="display: none;" onchange="procesarArchivoSeleccionado(this)" multiple>
+                </div>
+                
+                <!-- Materiales utilizados -->
+                <div class="form-group">
+                    <label>Materiales Utilizados:</label>
+                    <div class="materiales-container">
+                        <div id="materiales-seleccionados" class="materiales-list">
+                            <!-- Materiales se cargarán dinámicamente -->
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="agregarMaterial()">
+                            <i class="fas fa-plus"></i> Agregar Material
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Hidden fields -->
+                <input type="hidden" id="avance-id" value="">
+                <input type="hidden" id="fotos-base64" value="">
+                
+            </form>
+        </div>
+        
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="cerrarModalAvances()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button type="button" class="btn btn-primary" onclick="guardarAvance()">
+                <i class="fas fa-save"></i> 
+                <span id="texto-guardar-avance">Guardar Avance</span>
+            </button>
+        </div>
+        
+        <!-- Loading overlay para el modal -->
+        <div id="modal-avances-loading" class="modal-loading hidden">
+            <div class="loading-content">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-10">Guardando avance...</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Sección de Consultar Avances (actualizada con jerarquía) -->
+    <div id="consultar-avances" class="container hidden fade-in">
+        <div class="header">
+            <div>
+                <h2><i class="fas fa-search"></i> Consultar Avances</h2>
+            </div>
+            <button class="btn btn-danger" onclick="volverAlMenu()">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+        </div>
+        
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" onclick="mostrarTabAvances('lista')">
+                    <i class="fas fa-list"></i> Lista de Avances
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="mostrarTabAvances('jerarquia')">
+                    <i class="fas fa-sitemap"></i> Vista Jerárquica
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="mostrarTabAvances('espacios-comunes')">
+                    <i class="fas fa-building"></i> Espacios Comunes
+                </a>
+            </li>
+        </ul>
+        
+        <!-- Tab Lista de Avances -->
+        <div id="tab-lista-avances" class="tab-content">
+            <div class="filters">
+                <div class="form-group">
+                    <label for="filtro-obra">Obra:</label>
+                    <select id="filtro-obra" onchange="cargarTorresPorObra('filtro')">
+                        <option value="">Todas las obras</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="filtro-torre">Torre:</label>
+                    <select id="filtro-torre" onchange="cargarPisosPorTorre('filtro')">
+                        <option value="">Todas las torres</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="filtro-piso">Piso:</label>
+                    <select id="filtro-piso" onchange="cargarDepartamentosPorPiso('filtro')">
+                        <option value="">Todos los pisos</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="filtro-depto">Departamento:</label>
+                    <select id="filtro-depto">
+                        <option value="">Todos los departamentos</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="filtro-fecha">Fecha:</label>
+                    <input type="date" id="filtro-fecha">
+                </div>
+                
+                <div class="form-group">
+                    <label for="filtro-tipo-avance">Tipo de avance:</label>
+                    <select id="filtro-tipo-avance">
+                        <option value="">Todos los tipos</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="filtrarAvances()">
+                <i class="fas fa-filter"></i> Aplicar Filtros
+            </button>
+            <button class="btn btn-secondary" onclick="limpiarFiltrosAvances()">
+                <i class="fas fa-eraser"></i> Limpiar Filtros
+            </button>
+            
+            <div class="table-container">
+                <table id="tabla-avances">
+                    <thead>
+                        <tr>
+                            <th>Obra</th>
+                            <th>Torre</th>
+                            <th>Piso</th>
+                            <th>Unidad</th>
+                            <th>Avances</th>
+                            <th>Fecha</th>
+                            <th>Registrado por</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="avances-tbody">
+                        <!-- Los avances se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <button class="btn" onclick="cambiarPagina(-1)"><i class="fas fa-chevron-left"></i></button>
+                <span id="pagina-actual">1</span>
+                <button class="btn" onclick="cambiarPagina(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+        
+        <!-- Tab Vista Jerárquica -->
+        <div id="tab-jerarquia-avances" class="tab-content hidden">
+            <div class="filters">
+                <div class="form-group">
+                    <label for="jerarquia-obra">Obra:</label>
+                    <select id="jerarquia-obra" onchange="cargarJerarquiaObra()">
+                        <option value="">Seleccione una obra</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="hierarchy-view" class="hierarchy-view">
+                <!-- Se cargará dinámicamente la vista jerárquica -->
+            </div>
+        </div>
+        
+        <!-- Tab Espacios Comunes -->
+        <div id="tab-espacios-comunes" class="tab-content hidden">
+            <div class="filters">
+                <div class="form-group">
+                    <label for="comunes-obra">Obra:</label>
+                    <select id="comunes-obra" onchange="cargarEspaciosComunes()">
+                        <option value="">Seleccione una obra</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="common-spaces-container" class="common-spaces-grid">
+                <!-- Se cargarán dinámicamente los espacios comunes -->
+            </div>
+        </div>
+        
+        <div id="consulta-loader" class="loader hidden"></div>
+    </div>
+<!-- Sección de Gestión de Obras (Simplificada) -->
+    <div id="gestion-obras" class="container hidden fade-in">
+        <div class="header">
+            <div>
+                <h2><i class="fas fa-building"></i> Gestión de Obras</h2>
+            </div>
+            <button class="btn btn-danger" onclick="volverAlMenu()">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+        </div>
+        
+        <button class="btn btn-primary mb-20" onclick="mostrarFormularioObra()">
+            <i class="fas fa-plus"></i> Nueva Obra
+        </button>
+        
+        <div id="formulario-obra" class="hidden">
+            <input type="hidden" id="obra-id">
+            <div class="form-group">
+                <label for="nombre-obra">Nombre de la obra:</label>
+                <input type="text" id="nombre-obra" placeholder="Ingrese el nombre de la obra">
+            </div>
+            
+            <div class="form-group">
+                <label for="direccion-obra">Dirección:</label>
+                <input type="text" id="direccion-obra" placeholder="Ingrese la dirección de la obra">
+            </div>
+            
+            <div class="form-group">
+                <label for="fecha-inicio">Fecha de inicio:</label>
+                <input type="date" id="fecha-inicio">
+            </div>
+            
+            <div class="form-group">
+                <label for="fecha-termino">Fecha estimada de término:</label>
+                <input type="date" id="fecha-termino">
+            </div>
+            
+            <div class="form-group">
+                <label for="tipo-obra">Tipo de obra:</label>
+                <select id="tipo-obra">
+                    <option value="lotes">Lotes</option>
+                    <option value="condominios">Condominios</option>
+                    <option value="condominio_altura">Condominio en altura</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="estado-obra">Estado:</label>
+                <select id="estado-obra">
+                    <option value="Planificación">Planificación</option>
+                    <option value="En progreso">En progreso</option>
+                    <option value="Finalizada">Finalizada</option>
+                    <option value="Suspendida">Suspendida</option>
+                </select>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="guardarObra()">
+                    <i class="fas fa-save"></i> Guardar Obra
+                </button>
+                <button class="btn btn-secondary" onclick="mostrarModalMaquetacion()">
+                    <i class="fas fa-cogs"></i> Configurar Maquetación
+                </button>
+                <button class="btn btn-danger" onclick="cancelarEdicionObra()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table id="tabla-obras">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Dirección</th>
+                        <th>Inicio</th>
+                        <th>Término</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Avance</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="obras-tbody">
+                    <!-- Las obras se cargarán dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+        <div id="obras-loader" class="loader hidden"></div>
+    </div>
+<!-- Sección de Gestión de Inventario -->
+    <div id="gestion-inventario" class="container hidden fade-in">
+        <div class="header">
+            <div>
+                <h2><i class="fas fa-boxes"></i> Gestión de Inventario</h2>
+            </div>
+            <button class="btn btn-danger" onclick="volverAlMenu()">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+        </div>
+        
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" onclick="mostrarTabInventario('consultar')">
+                    <i class="fas fa-search"></i> Consultar
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="mostrarTabInventario('entradas')">
+                    <i class="fas fa-plus-circle"></i> Entradas
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="mostrarTabInventario('salidas')">
+                    <i class="fas fa-minus-circle"></i> Salidas
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="mostrarTabInventario('movimientos')">
+                    <i class="fas fa-exchange-alt"></i> Movimientos
+                </a>
+            </li>
+        </ul>
+        
+        <!-- Tab Consultar Inventario -->
+        <div id="inventario-consultar" class="tab-content">
+            <div class="filters mb-20">
+                <div class="form-group">
+                    <label for="filtro-categoria">Categoría:</label>
+                    <select id="filtro-categoria">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="filtro-stock">
+                        <input type="checkbox" id="filtro-stock"> Solo stock bajo
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="buscar-material">Buscar:</label>
+                    <input type="text" id="buscar-material" placeholder="Código o nombre">
+                </div>
+            </div>
+            
+            <button class="btn btn-primary mb-20" onclick="filtrarInventario()">
+                <i class="fas fa-filter"></i> Aplicar Filtros
+            </button>
+            
+            <div class="table-container">
+                <table id="tabla-inventario">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Categoría</th>
+                            <th>Stock</th>
+                            <th>Mínimo</th>
+                            <th>Unidad</th>
+                            <th>Ubicación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventario-tbody">
+                        <!-- Los materiales se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Tab Entradas -->
+        <div id="inventario-entradas" class="tab-content hidden">
+            <h3>Registrar Entrada de Material</h3>
+            
+            <div class="form-group">
+                <label for="material-entrada">Material:</label>
+                <select id="material-entrada" onchange="actualizarDetallesMaterial()">
+                    <option value="">Seleccione un material</option>
+                </select>
+            </div>
+            
+            <div id="detalles-material" style="display: none;">
+                <div class="alert alert-info">
+                    <strong>Stock actual:</strong> <span id="stock-actual">0</span> <span id="unidad-actual">unidad</span><br>
+                    <strong>Stock mínimo:</strong> <span id="minimo-actual">0</span><br>
+                    <strong>Ubicación:</strong> <span id="ubicacion-actual">-</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="cantidad-entrada">Cantidad:</label>
+                <input type="number" id="cantidad-entrada" min="0.01" step="0.01" placeholder="Ingrese la cantidad">
+            </div>
+            
+            <div class="form-group">
+                <label for="origen-entrada">Origen/Proveedor:</label>
+                <input type="text" id="origen-entrada" placeholder="Proveedor o fuente">
+            </div>
+            
+            <div class="form-group">
+                <label for="costo-entrada">Costo unitario (opcional):</label>
+                <input type="number" id="costo-entrada" min="0" step="0.01" placeholder="Costo por unidad">
+            </div>
+            
+            <div class="form-group">
+                <label for="comentario-entrada">Comentario:</label>
+                <textarea id="comentario-entrada" placeholder="Comentario adicional"></textarea>
+            </div>
+            
+            <button class="btn btn-primary" onclick="registrarEntrada()">
+                <i class="fas fa-save"></i> Registrar Entrada
+            </button>
+            
+            <div id="entrada-loader" class="loader hidden"></div>
+        </div>
+        
+        <!-- Tab Salidas -->
+        <div id="inventario-salidas" class="tab-content hidden">
+            <h3>Registrar Salida de Material</h3>
+            
+            <div class="form-group">
+                <label for="material-salida">Material:</label>
+                <select id="material-salida" onchange="actualizarStockDisponible()">
+                    <option value="">Seleccione un material</option>
+                </select>
+            </div>
+            
+            <div class="alert alert-info">
+                <strong>Stock disponible:</strong> <span id="stock-disponible-valor">0</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="cantidad-salida">Cantidad:</label>
+                <input type="number" id="cantidad-salida" min="0.01" step="0.01" placeholder="Ingrese la cantidad">
+            </div>
+            
+            <div class="form-group">
+                <label for="destino-salida">Destino/Obra:</label>
+                <select id="destino-salida">
+                    <option value="">Seleccione el destino</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="comentario-salida">Comentario:</label>
+                <textarea id="comentario-salida" placeholder="Comentario adicional"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="prioridad-salida">Prioridad:</label>
+                <select id="prioridad-salida">
+                    <option value="Normal">Normal</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Urgente">Urgente</option>
+                </select>
+            </div>
+            
+            <button class="btn btn-primary" onclick="registrarSalida()">
+                <i class="fas fa-save"></i> Registrar Salida
+            </button>
+            
+            <div id="salida-loader" class="loader hidden"></div>
+        </div>
+        
+        <!-- Tab Movimientos -->
+        <div id="inventario-movimientos" class="tab-content hidden">
+            <h3>Historial de Movimientos</h3>
+            
+            <div class="filters mb-20">
+                <div class="form-group">
+                    <label for="filtro-tipo-movimiento">Tipo:</label>
+                    <select id="filtro-tipo-movimiento">
+                        <option value="">Todos</option>
+                        <option value="entrada">Entrada</option>
+                        <option value="salida">Salida</option>
+                        <option value="transferencia">Transferencia</option>
+                        <option value="ajuste">Ajuste</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="filtro-material-movimiento">Material:</label>
+                    <select id="filtro-material-movimiento">
+                        <option value="">Todos los materiales</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="filtro-fecha-desde">Desde:</label>
+                    <input type="date" id="filtro-fecha-desde">
+                </div>
+                
+                <div class="form-group">
+                    <label for="filtro-fecha-hasta">Hasta:</label>
+                    <input type="date" id="filtro-fecha-hasta">
+                </div>
+            </div>
+            
+            <button class="btn btn-primary mb-20" onclick="filtrarMovimientos()">
+                <i class="fas fa-filter"></i> Aplicar Filtros
+            </button>
+            
+            <div class="table-container">
+                <table id="tabla-movimientos">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Material</th>
+                            <th>Cantidad</th>
+                            <th>Origen/Destino</th>
+                            <th>Usuario</th>
+                            <th>Comentario</th>
+                        </tr>
+                    </thead>
+                    <tbody id="movimientos-tbody">
+                        <!-- Los movimientos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<!-- Sección de Gestión de Usuarios -->
+    <div id="gestion-usuarios" class="container hidden fade-in">
+        <div class="header">
+            <div>
+                <h2><i class="fas fa-users"></i> Gestión de Usuarios</h2>
+            </div>
+            <button class="btn btn-danger" onclick="volverAlMenu()">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+        </div>
+        
+        <button class="btn btn-primary mb-20" onclick="mostrarFormularioUsuario()">
+            <i class="fas fa-plus"></i> Nuevo Usuario
+        </button>
+        
+        <div id="formulario-usuario" class="hidden mb-20">
+            <input type="hidden" id="usuario-id">
+            <div class="form-group">
+                <label for="nombre-usuario">Nombre:</label>
+                <input type="text" id="nombre-usuario" placeholder="Nombre del usuario">
+            </div>
+            
+            <div class="form-group">
+                <label for="apellido-usuario">Apellido:</label>
+                <input type="text" id="apellido-usuario" placeholder="Apellido del usuario">
+            </div>
+            
+            <div class="form-group">
+                <label for="username-usuario">Usuario:</label>
+                <input type="text" id="username-usuario" placeholder="Nombre de usuario para login">
+            </div>
+            
+            <div class="form-group">
+                <label for="contrasena-usuario">Contraseña:</label>
+                <input type="password" id="contrasena-usuario" placeholder="Contraseña">
+                <small id="contrasena-info" class="text-muted">Dejar en blanco para mantener la actual (sólo en edición)</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="rol-usuario">Rol:</label>
+                <select id="rol-usuario">
+                    <option value="Admin">Administrador</option>
+                    <option value="Supervisor">Supervisor</option>
+                    <option value="Técnico">Técnico</option>
+                    <option value="Ayudante">Ayudante</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="email-usuario">Email:</label>
+                <input type="email" id="email-usuario" placeholder="correo@ejemplo.com">
+            </div>
+            
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="guardarUsuario()">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+                <button class="btn btn-danger" onclick="cancelarEdicionUsuario()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table id="tabla-usuarios">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Email</th>
+                        <th>Último Acceso</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="usuarios-tbody">
+                    <!-- Los usuarios se cargarán dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+        <div id="usuarios-loader" class="loader hidden"></div>
+    </div>
+<!-- Sección de Reportes (con EDT añadido) -->
+    <div id="reportes" class="container hidden fade-in">
+        <div class="header">
+            <div>
+                <h2><i class="fas fa-chart-bar"></i> Reportes</h2>
+            </div>
+            <button class="btn btn-danger" onclick="volverAlMenu()">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+        </div>
+        
+        <ul class="nav nav-tabs mb-20">
+            <li class="nav-item">
+                <a class="nav-link active" onclick="mostrarTabReporte('avances')">Avances</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="mostrarTabReporte('inventario')">Inventario</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="mostrarTabReporte('edt')">EDT</a>
+            </li>
+        </ul>
+        
+        <!-- Pestaña de Reporte de Avances -->
+        <div id="reporte-avances" class="tab-content">
+            <div class="filters">
+                <div class="form-group">
+                    <label for="reporte-obra">Obra:</label>
+                    <select id="reporte-obra">
+                        <option value="">Todas las obras</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reporte-categoria">Categoría:</label>
+                    <select id="reporte-categoria">
+                        <option value="">Todas las categorías</option>
+                        <option value="alam">Alámbrico</option>
+                        <option value="inal">Inalámbrico</option>
+                        <option value="fo">Fibra Óptica</option>
+                        <option value="mediciones">Mediciones</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reporte-fecha-desde">Desde:</label>
+                    <input type="date" id="reporte-fecha-desde">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reporte-fecha-hasta">Hasta:</label>
+                    <input type="date" id="reporte-fecha-hasta">
+                </div>
+            </div>
+            
+            <button class="btn btn-primary mb-20" onclick="generarReporteAvances()">
+                <i class="fas fa-chart-line"></i> Generar Reporte
+            </button>
+            
+            <button class="btn btn-secondary mb-20" onclick="exportarReporteAvances()">
+                <i class="fas fa-file-export"></i> Exportar a CSV
+            </button>
+            
+            <button class="btn btn-warning mb-20" onclick="enviarReporteAvancesPorCorreo()">
+                <i class="fas fa-envelope"></i> Enviar por Correo
+            </button>
+            
+            <div id="reporte-avances-result" class="mt-20">
+                <!-- El resultado del reporte se mostrará aquí -->
+            </div>
+        </div>
+        
+        <!-- Pestaña de Reporte de Inventario -->
+        <div id="reporte-inventario" class="tab-content hidden">
+            <div class="filters">
+                <div class="form-group">
+                    <label for="reporte-inv-categoria">Categoría:</label>
+                    <select id="reporte-inv-categoria">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reporte-inv-obra">Obra:</label>
+                    <select id="reporte-inv-obra">
+                        <option value="">Todas las obras</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reporte-stock-bajo">
+                        <input type="checkbox" id="reporte-stock-bajo"> Incluir solo stock bajo
+                    </label>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary mb-20" onclick="generarReporteInventario()">
+                <i class="fas fa-chart-bar"></i> Generar Reporte
+            </button>
+            
+            <button class="btn btn-secondary mb-20" onclick="exportarReporteInventario()">
+                <i class="fas fa-file-export"></i> Exportar a CSV
+            </button>
+            
+            <button class="btn btn-warning mb-20" onclick="enviarReporteInventarioPorCorreo()">
+                <i class="fas fa-envelope"></i> Enviar por Correo
+            </button>
+            
+            <div id="reporte-inventario-result" class="mt-20">
+                <!-- El resultado del reporte se mostrará aquí -->
+            </div>
+        </div>
+        
+        <!-- Pestaña de EDT (Nueva) -->
+        <div id="reporte-edt" class="tab-content hidden">
+            <div class="form-group">
+                <label for="edt-obra">Obra:</label>
+                <select id="edt-obra" onchange="cargarEDTObra()">
+                    <option value="">Seleccione una obra</option>
+                </select>
+            </div>
+            
+            <div id="edt-container" class="hidden">
+                <h3>Estructura de Desglose de Trabajo: <span id="edt-obra-nombre"></span></h3>
+                
+                <div class="form-group">
+                    <label for="edt-vista">Vista:</label>
+                    <select id="edt-vista" onchange="cambiarVistaEDT()">
+                        <option value="categorias">Por Categorías</option>
+                        <option value="familias">Por Familias</option>
+                        <option value="torres">Por Torres</option>
+                        <option value="completa">Completa</option>
+                    </select>
+                </div>
+                
+                <div class="edt-tree" id="edt-tree">
+                    <!-- La estructura EDT se cargará dinámicamente -->
+                </div>
+                
+                <div class="mt-20">
+                    <button class="btn btn-secondary" onclick="exportarEDT()">
+                        <i class="fas fa-file-export"></i> Exportar EDT
+                    </button>
+                    <button class="btn btn-info" onclick="expandirTodoEDT()">
+                        <i class="fas fa-expand-alt"></i> Expandir Todo
+                    </button>
+                    <button class="btn btn-info" onclick="contraerTodoEDT()">
+                        <i class="fas fa-compress-alt"></i> Contraer Todo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Sección de Documentación (Control Documental) -->
+    <div id="documentacion" class="container hidden fade-in">
+        <div class="header">
+            <div>
+                <h2><i class="fas fa-file-alt"></i> Documentación</h2>
+            </div>
+            <button class="btn btn-danger" onclick="volverAlMenu()">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <label for="doc-obra">Obra:</label>
+            <select id="doc-obra" onchange="cargarDocumentosObra()">
+                <option value="">Seleccione una obra</option>
+            </select>
+        </div>
+        
+        <div id="documentos-container" class="hidden">
+            <div class="mb-20">
+                <button class="btn btn-primary" onclick="mostrarFormularioDocumento()">
+                    <i class="fas fa-upload"></i> Subir Documento
+                </button>
+            </div>
+            
+            <div id="formulario-documento" class="hidden mb-20">
+                <div class="form-group">
+                    <label for="nombre-documento">Nombre del documento:</label>
+                    <input type="text" id="nombre-documento" placeholder="Nombre descriptivo del documento">
+                </div>
+                
+                <div class="form-group">
+                    <label for="tipo-documento">Tipo de documento:</label>
+                    <select id="tipo-documento">
+                        <option value="plano">Plano</option>
+                        <option value="memoria">Memoria técnica</option>
+                        <option value="manual">Manual</option>
+                        <option value="certificado">Certificado</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="archivo-documento">Archivo:</label>
+                    <div class="file-upload">
+                        <label class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i> Seleccionar archivo
+                            <input type="file" id="archivo-documento" class="file-upload-input">
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="descripcion-documento">Descripción:</label>
+                    <textarea id="descripcion-documento" placeholder="Descripción del documento"></textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="subirDocumento()">
+                        <i class="fas fa-save"></i> Subir
+                    </button>
+                    <button class="btn btn-danger" onclick="cancelarFormularioDocumento()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="filters mb-20">
+                <div class="form-group">
+                    <label for="filtro-tipo-doc">Tipo:</label>
+                    <select id="filtro-tipo-doc">
+                        <option value="">Todos</option>
+                        <option value="plano">Planos</option>
+                        <option value="memoria">Memorias técnicas</option>
+                        <option value="manual">Manuales</option>
+                        <option value="certificado">Certificados</option>
+                        <option value="otro">Otros</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="buscar-documento">Buscar:</label>
+                    <input type="text" id="buscar-documento" placeholder="Nombre o descripción">
+                </div>
+            </div>
+            
+            <button class="btn btn-primary mb-20" onclick="filtrarDocumentos()">
+                <i class="fas fa-filter"></i> Aplicar Filtros
+            </button>
+            
+            <div id="documentos-grid" class="documents-grid">
+                <!-- Los documentos se cargarán dinámicamente -->
+            </div>
+        </div>
+        
+        <div id="documentos-loader" class="loader hidden"></div>
+    </div>
+<!-- Sección de Planificación de Metas -->
+    <div id="planificacion-metas" class="container hidden fade-in">
+        <div class="header">
+            <div>
+                <h2><i class="fas fa-bullseye"></i> Planificación de Metas</h2>
+            </div>
+            <button class="btn btn-danger" onclick="volverAlMenu()">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <label for="metas-obra">Obra:</label>
+            <select id="metas-obra" onchange="cargarMetasObra()">
+                <option value="">Seleccione una obra</option>
+            </select>
+        </div>
+        
+        <div id="metas-container" class="hidden">
+            <div class="mb-20">
+                <button class="btn btn-primary" onclick="mostrarFormularioMeta()">
+                    <i class="fas fa-plus"></i> Nueva Meta
+                </button>
+            </div>
+            
+            <div id="formulario-meta" class="hidden mb-20">
+                <div class="form-group">
+                    <label for="nombre-meta">Nombre de la meta:</label>
+                    <input type="text" id="nombre-meta" placeholder="Nombre descriptivo">
+                </div>
+                
+                <div class="form-group">
+                    <label for="tipo-meta">Tipo de meta:</label>
+                    <select id="tipo-meta">
+                        <option value="avance">Avance de trabajo</option>
+                        <option value="tiempo">Tiempo de ejecución</option>
+                        <option value="material">Entrega de material</option>
+                        <option value="otros">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="categoria-meta">Categoría:</label>
+                    <select id="categoria-meta">
+                        <option value="alam">Alámbrico</option>
+                        <option value="inal">Inalámbrico</option>
+                        <option value="fo">Fibra óptica</option>
+                        <option value="mediciones">Mediciones</option>
+                        <option value="general">General</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="valor-meta">Valor objetivo:</label>
+                    <input type="number" id="valor-meta" min="0" step="0.01">
+                </div>
+                
+                <div class="form-group">
+                    <label for="unidad-meta">Unidad de medida:</label>
+                    <select id="unidad-meta">
+                        <option value="porcentaje">Porcentaje (%)</option>
+                        <option value="unidades">Unidades</option>
+                        <option value="dias">Días</option>
+                        <option value="otra">Otra</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="fecha-inicio-meta">Fecha de inicio:</label>
+                    <input type="date" id="fecha-inicio-meta">
+                </div>
+                
+                <div class="form-group">
+                    <label for="fecha-termino-meta">Fecha de término:</label>
+                    <input type="date" id="fecha-termino-meta">
+                </div>
+                
+                <div class="form-group">
+                    <label for="descripcion-meta">Descripción:</label>
+                    <textarea id="descripcion-meta" placeholder="Descripción detallada de la meta"></textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="guardarMeta()">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                    <button class="btn btn-danger" onclick="cancelarMeta()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="filters mb-20">
+                <div class="form-group">
+                    <label for="filtro-tipo-meta">Tipo:</label>
+                    <select id="filtro-tipo-meta">
+                        <option value="">Todos</option>
+                        <option value="avance">Avance</option>
+                        <option value="tiempo">Tiempo</option>
+                        <option value="material">Material</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="filtro-estado-meta">Estado:</label>
+                    <select id="filtro-estado-meta">
+                        <option value="">Todos</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en_curso">En curso</option>
+                        <option value="completada">Completada</option>
+                        <option value="retrasada">Retrasada</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary mb-20" onclick="filtrarMetas()">
+                <i class="fas fa-filter"></i> Aplicar Filtros
+            </button>
+            
+            <div class="goals-container" id="metas-lista">
+                <!-- Las metas se cargarán dinámicamente -->
+            </div>
+        </div>
+        
+        <div id="metas-loader" class="loader hidden"></div>
+    </div>
+<!-- Sección de Cobranzas (Avances para facturación) -->
+    <div id="cobranzas" class="container hidden fade-in">
+        <div class="header">
+            <div>
+                <h2><i class="fas fa-money-bill-wave"></i> Cobranzas</h2>
+            </div>
+            <button class="btn btn-danger" onclick="volverAlMenu()">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <label for="cobranza-obra">Obra:</label>
+            <select id="cobranza-obra" onchange="cargarResumenCobranza()">
+                <option value="">Seleccione una obra</option>
+            </select>
+        </div>
+        
+        <div id="cobranza-container" class="hidden">
+            <h3>Resumen de avance para cobranza: <span id="cobranza-obra-nombre"></span></h3>
+            
+            <div class="mt-20 mb-20">
+                <div class="table-container">
+                    <table id="tabla-resumen-cobranza">
+                        <thead>
+                            <tr>
+                                <th rowspan="2">Tipo</th>
+                                <th colspan="3">Porcentaje de Avance</th>
+                                <th rowspan="2">Última Actualización</th>
+                            </tr>
+                            <tr>
+                                <th>Actual</th>
+                                <th>Cobrado</th>
+                                <th>Pendiente</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Alámbrico</td>
+                                <td id="alam-actual">-</td>
+                                <td id="alam-cobrado">-</td>
+                                <td id="alam-pendiente">-</td>
+                                <td id="alam-fecha">-</td>
+                            </tr>
+                            <tr>
+                                <td>Inalámbrico</td>
+                                <td id="inal-actual">-</td>
+                                <td id="inal-cobrado">-</td>
+                                <td id="inal-pendiente">-</td>
+                                <td id="inal-fecha">-</td>
+                            </tr>
+                            <tr>
+                                <td>Fibra Óptica</td>
+                                <td id="fo-actual">-</td>
+                                <td id="fo-cobrado">-</td>
+                                <td id="fo-pendiente">-</td>
+                                <td id="fo-fecha">-</td>
+                            </tr>
+                            <tr>
+                                <td>Señales</td>
+                                <td id="senales-actual">-</td>
+                                <td id="senales-cobrado">-</td>
+                                <td id="senales-pendiente">-</td>
+                                <td id="senales-fecha">-</td>
+                            </tr>
+                            <tr>
+                                <td>Mediciones</td>
+                                <td id="mediciones-actual">-</td>
+                                <td id="mediciones-cobrado">-</td>
+                                <td id="mediciones-pendiente">-</td>
+                                <td id="mediciones-fecha">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>TOTAL</strong></td>
+                                <td id="total-actual">-</td>
+                                <td id="total-cobrado">-</td>
+                                <td id="total-pendiente">-</td>
+                                <td id="total-fecha">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mb-20">
+                <button class="btn btn-primary" onclick="mostrarFormularioCobranza()">
+                    <i class="fas fa-file-invoice-dollar"></i> Registrar Cobranza
+                </button>
+                <button class="btn btn-secondary" onclick="exportarResumenCobranza()">
+                    <i class="fas fa-file-export"></i> Exportar Resumen
+                </button>
+            </div>
+            
+            <div id="formulario-cobranza" class="hidden mb-20">
+                <h4>Nueva Cobranza</h4>
+                
+                <div class="form-group">
+                    <label for="fecha-cobranza">Fecha:</label>
+                    <input type="date" id="fecha-cobranza">
+                </div>
+                
+                <div class="form-group">
+                    <label for="numero-factura">Número de factura:</label>
+                    <input type="text" id="numero-factura" placeholder="Opcional">
+                </div>
+                
+                <div class="form-group">
+                    <label>Tipos a cobrar:</label>
+                    <div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="cobrar-alam" onchange="toggleCampoCobranza('alam')"> Alámbrico
+                        </label>
+                    </div>
+                    <div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="cobrar-inal" onchange="toggleCampoCobranza('inal')"> Inalámbrico
+                        </label>
+                    </div>
+                    <div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="cobrar-fo" onchange="toggleCampoCobranza('fo')"> Fibra Óptica
+                        </label>
+                    </div>
+                    <div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="cobrar-senales" onchange="toggleCampoCobranza('senales')"> Señales
+                        </label>
+                    </div>
+                    <div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="cobrar-mediciones" onchange="toggleCampoCobranza('mediciones')"> Mediciones
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="porcentajes-cobranza" class="hidden">
+                    <div class="form-group hidden" id="porcentaje-alam-group">
+                        <label for="porcentaje-alam">Porcentaje a cobrar (Alámbrico):</label>
+                        <input type="number" id="porcentaje-alam" min="0" max="100" step="0.01">
+                        <small>Máximo disponible: <span id="max-alam">0</span>%</small>
+                    </div>
+                    
+                    <div class="form-group hidden" id="porcentaje-inal-group">
+                        <label for="porcentaje-inal">Porcentaje a cobrar (Inalámbrico):</label>
+                        <input type="number" id="porcentaje-inal" min="0" max="100" step="0.01">
+                        <small>Máximo disponible: <span id="max-inal">0</span>%</small>
+                    </div>
+                    
+                    <div class="form-group hidden" id="porcentaje-fo-group">
+                        <label for="porcentaje-fo">Porcentaje a cobrar (Fibra Óptica):</label>
+                        <input type="number" id="porcentaje-fo" min="0" max="100" step="0.01">
+                        <small>Máximo disponible: <span id="max-fo">0</span>%</small>
+                    </div>
+                    
+                    <div class="form-group hidden" id="porcentaje-senales-group">
+                        <label for="porcentaje-senales">Porcentaje a cobrar (Señales):</label>
+                        <input type="number" id="porcentaje-senales" min="0" max="100" step="0.01">
+                        <small>Máximo disponible: <span id="max-senales">0</span>%</small>
+                    </div>
+                    
+                    <div class="form-group hidden" id="porcentaje-mediciones-group">
+                        <label for="porcentaje-mediciones">Porcentaje a cobrar (Mediciones):</label>
+                        <input type="number" id="porcentaje-mediciones" min="0" max="100" step="0.01">
+                        <small>Máximo disponible: <span id="max-mediciones">0</span>%</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="observaciones-cobranza">Observaciones:</label>
+                    <textarea id="observaciones-cobranza" placeholder="Detalles adicionales de la cobranza"></textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="registrarCobranza()">
+                        <i class="fas fa-save"></i> Registrar
+                    </button>
+                    <button class="btn btn-danger" onclick="cancelarCobranza()">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+            
+            <h4 class="mt-20">Historial de Cobranzas</h4>
+            <div class="table-container">
+                <table id="tabla-historial-cobranzas">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>N° Factura</th>
+                            <th>Alámbrico</th>
+                            <th>Inalámbrico</th>
+                            <th>Fibra Óptica</th>
+                            <th>Señales</th>
+                            <th>Mediciones</th>
+                            <th>Registrado por</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cobranzas-tbody">
+                        <!-- El historial de cobranzas se cargará dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="cobranzas-loader" class="loader hidden"></div>
+    </div>
+<!-- Sección de Transferencias de Materiales -->
+    <div id="transferencias" class="container hidden fade-in">
+        <div class="header">
+            <div>
+                <h2><i class="fas fa-exchange-alt"></i> Transferencias de Materiales</h2>
+            </div>
+            <button class="btn btn-danger" onclick="volverAlMenu()">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+        </div>
+        
+        <div class="mb-20">
+            <button class="btn btn-primary" onclick="mostrarFormularioTransferencia()">
+                <i class="fas fa-plus"></i> Nueva Transferencia
+            </button>
+        </div>
+        
+        <div id="formulario-transferencia" class="hidden mb-20">
+            <h3>Nueva Transferencia de Material</h3>
+            
+            <div class="form-group">
+                <label for="obra-origen">Obra de origen:</label>
+                <select id="obra-origen" onchange="cargarMaterialesDisponiblesObra()">
+                    <option value="">Seleccione la obra de origen</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="obra-destino">Obra de destino:</label>
+                <select id="obra-destino">
+                    <option value="">Seleccione la obra de destino</option>
+                </select>
+            </div>
+            
+            <div id="seleccion-materiales" class="hidden">
+                <div class="form-group">
+                    <label for="material-transferencia">Material:</label>
+                    <select id="material-transferencia" onchange="actualizarDisponibilidadMaterial()">
+                        <option value="">Seleccione un material</option>
+                    </select>
+                    <div id="disponibilidad-material" class="mt-10" style="font-size: 14px; color: var(--dark-color);">
+                        Disponible en obra: <span id="disponible-obra">0</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cantidad-transferencia">Cantidad a transferir:</label>
+                    <input type="number" id="cantidad-transferencia" min="0.01" step="0.01">
+                </div>
+                
+                <button class="btn btn-secondary" onclick="agregarMaterialTransferencia()">
+                    <i class="fas fa-plus"></i> Agregar a la lista
+                </button>
+            </div>
+            
+            <div id="lista-materiales-transferencia" class="mt-20 hidden">
+                <h4>Materiales a transferir</h4>
+                <div class="table-container">
+                    <table id="tabla-materiales-transferencia">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Material</th>
+                                <th>Cantidad</th>
+                                <th>Unidad</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transferencia-items-tbody">
+                            <!-- Los materiales a transferir se cargarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="form-group mt-20">
+                <label for="motivo-transferencia">Motivo de la transferencia:</label>
+                <textarea id="motivo-transferencia" placeholder="Describa el motivo de la transferencia"></textarea>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="registrarTransferencia()">
+                    <i class="fas fa-save"></i> Registrar Transferencia
+                </button>
+                <button class="btn btn-danger" onclick="cancelarTransferencia()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+        
+        <h3>Historial de Transferencias</h3>
+        <div class="filters mb-20">
+            <div class="form-group">
+                <label for="filtro-obra-origen">Obra de origen:</label>
+                <select id="filtro-obra-origen">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="filtro-obra-destino">Obra de destino:</label>
+                <select id="filtro-obra-destino">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="filtro-fecha-desde-trans">Desde:</label>
+                <input type="date" id="filtro-fecha-desde-trans">
+            </div>
+            
+            <div class="form-group">
+                <label for="filtro-fecha-hasta-trans">Hasta:</label>
+                <input type="date" id="filtro-fecha-hasta-trans">
+            </div>
+        </div>
+        
+        <button class="btn btn-primary mb-20" onclick="filtrarTransferencias()">
+            <i class="fas fa-filter"></i> Aplicar Filtros
+        </button>
+        
+        <div class="table-container">
+            <table id="tabla-transferencias">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Obra Origen</th>
+                        <th>Obra Destino</th>
+                        <th>Materiales</th>
+                        <th>Motivo</th>
+                        <th>Registrado por</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="transferencias-tbody">
+                    <!-- Las transferencias se cargarán dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="transferencias-loader" class="loader hidden"></div>
+    </div>
+<!-- Modal de cambio de contraseña -->
+    <div id="modal-cambiar-contrasena" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-key"></i> Cambiar Contraseña</h3>
+                <button class="modal-close" onclick="cerrarModalContrasena()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="contrasena-actual">Contraseña actual:</label>
+                    <input type="password" id="contrasena-actual" placeholder="Ingrese su contraseña actual">
+                </div>
+                
+                <div class="form-group">
+                    <label for="contrasena-nueva">Nueva contraseña:</label>
+                    <input type="password" id="contrasena-nueva" placeholder="Ingrese su nueva contraseña">
+                </div>
+                
+                <div class="form-group">
+                    <label for="contrasena-confirmar">Confirmar nueva contraseña:</label>
+                    <input type="password" id="contrasena-confirmar" placeholder="Confirme su nueva contraseña">
+                </div>
+                
+                <div id="cambiar-contrasena-error" class="mt-10 text-danger hidden"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="cerrarModalContrasena()">Cancelar</button>
+                <button class="btn btn-primary" onclick="cambiarContrasena()">Guardar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para ver detalle de avance -->
+    <div id="modal-detalle-avance" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-tasks"></i> Detalle de Avance</h3>
+                <button class="modal-close" onclick="cerrarModalDetalleAvance()">&times;</button>
+            </div>
+            <div class="modal-body" id="detalle-avance-contenido">
+                <!-- El contenido del detalle se cargará dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="cerrarModalDetalleAvance()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Maquetación (integrado) -->
+    <div id="modal-maquetacion" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 95%; width: 1200px; max-height: 95%;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-cogs"></i> Configurar Maquetación</h3>
+                <button class="modal-close" onclick="cerrarModalMaquetacion()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Incluir el modal de maquetación -->
+                <?!= HtmlService.createHtmlOutputFromFile('partials/modal-maquetacion').getContent(); ?>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="guardarMaquetacion()">
+                    <i class="fas fa-save"></i> Guardar Maquetación
+                </button>
+                <button class="btn btn-danger" onclick="cerrarModalMaquetacion()">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cargar scripts JavaScript -->
+    <?!= HtmlService.createHtmlOutputFromFile('js/main').getContent(); ?>
+    <?!= HtmlService.createHtmlOutputFromFile('js/api').getContent(); ?>
+    <?!= HtmlService.createHtmlOutputFromFile('js/obras').getContent(); ?>
+    <?!= HtmlService.createHtmlOutputFromFile('js/avances').getContent(); ?>
+    <?!= HtmlService.createHtmlOutputFromFile('js/inventario').getContent(); ?>
+    <?!= HtmlService.createHtmlOutputFromFile('js/usuarios').getContent(); ?>
+    <?!= HtmlService.createHtmlOutputFromFile('js/reportes').getContent(); ?>
+    <?!= HtmlService.createHtmlOutputFromFile('js/maquetacion').getContent(); ?>
+
+</body>
+</html>      
